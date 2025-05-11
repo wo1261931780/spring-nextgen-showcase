@@ -1,0 +1,79 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: spring-nextgen-showcase
+
+  # Datasource configuration (Example for H2 in-memory database)
+  # Adjust these settings for your actual database
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update # Be cautious with this in production; use 'validate' or a migration tool
+    show-sql: true
+    defer-datasource-initialization: true # For schema.sql and data.sql execution after Hibernate
+
+  # OAuth2 Authorization Server Configuration (from the document)
+  security:
+    oauth2:
+      authorizationserver:
+        client:
+          # Example client registration (replace with your actual clients)
+          messaging-client:
+            registration:
+              client-id: "messaging-client"
+              client-secret: "{noop}secret" # {noop} for plain text, use bcrypt in production
+              client-authentication-methods:
+                - "client_secret_basic"
+              authorization-grant-types:
+                - "authorization_code"
+                - "refresh_token"
+                - "client_credentials"
+              redirect-uris:
+                - "http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc"
+              scopes:
+                - "openid"
+                - "message.read"
+                - "message.write"
+            require-authorization-consent: true # or false
+        # issuer-url from the document
+        issuer-uri: https://auth.yourcompany.com # Replace with your actual issuer URI
+        # token settings from the document (though the document has 'issuer-url' and 'token.access-token-time-to-live' at a different level,
+        # spring-security-oauth2-authorization-server uses 'issuer-uri' under 'authorizationserver')
+        # access-token-time-to-live can be configured via a TokenSettings bean.
+        # The document shows:
+        # token:
+        #   access-token-time-to-live: 1h
+        # This is typically configured programmatically via a TokenSettings bean rather than directly in YAML.
+        # For example, in your AuthServerConfig:
+        # @Bean
+        # public TokenSettings tokenSettings() {
+        #   return TokenSettings.builder().accessTokenTimeToLive(Duration.ofHours(1)).build();
+        # }
+
+# Actuator endpoints configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics # Expose specific endpoints
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true # Ensure Prometheus endpoint is enabled
+
+# Logging configuration (optional, for example to see more Spring Security logs)
+logging:
+  level:
+    org.springframework.security: DEBUG # Set to TRACE for more verbose output if needed
+    # com.example.springnextgen: DEBUG # For your application's packages
+
+# If you plan to use virtual threads for Tomcat (requires Spring Boot 3.2+ and compatible JDK 19+)
+# spring.threads.virtual.enabled: true
